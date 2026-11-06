@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="el">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pelikan Price Intelligence</title>
+<style>
+:root{--ink:#17212b;--muted:#617080;--line:#dce3e9;--blue:#173f67;--pale:#f3f7fa;--green:#176b4a}
+*{box-sizing:border-box}body{margin:0;background:#f5f7f9;color:var(--ink);font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+main{max-width:820px;margin:32px auto;padding:0 18px 48px}
+header{margin-bottom:22px}h1{font-size:clamp(25px,4vw,34px);line-height:1.15;margin:0 0 8px;color:var(--blue)}
+.sub{color:var(--muted);margin:0}.step{background:#fff;border:1px solid var(--line);border-radius:14px;padding:22px;margin:16px 0;box-shadow:0 3px 12px #1b344408}
+.step h2{font-size:19px;margin:0 0 6px}.hint{color:var(--muted);font-size:14px;margin:4px 0 14px}
+label{display:block;font-weight:650;margin:12px 0 6px}input[type=text],input[type=number],textarea{width:100%;border:1px solid #bdc9d3;border-radius:9px;padding:12px;font:inherit;background:#fff;color:var(--ink)}
+textarea{min-height:150px;resize:vertical}input:focus,textarea:focus{outline:2px solid #9ab8d2;border-color:var(--blue)}
+button{border:0;border-radius:9px;background:var(--blue);color:#fff;font:650 15px system-ui;padding:11px 16px;cursor:pointer;margin:8px 8px 0 0}
+button.secondary{background:#e8eef3;color:var(--blue);border:1px solid #cfdae3}
+button:disabled{opacity:.45;cursor:not-allowed}.row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.note{background:var(--pale);border-left:3px solid #8ca9c1;padding:10px 13px;border-radius:5px;color:#415364;font-size:14px;margin:12px 0}
+.status{font-size:14px;color:var(--green);font-weight:650;min-height:22px}
+.hidden{display:none!important}.check{display:flex;gap:10px;align-items:flex-start;margin-top:14px;font-weight:500}
+.check input{margin-top:5px}.pill{display:inline-block;background:#edf3f7;color:#38536a;border-radius:30px;padding:3px 9px;font-size:12px;font-weight:700;margin-bottom:10px}
+.pricegrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.result{font-size:14px;color:var(--muted);margin-top:12px}
+footer{color:var(--muted);font-size:12px;text-align:center;margin-top:24px}
+@media(max-width:560px){.step{padding:17px}.pricegrid{grid-template-columns:1fr}button{width:100%;margin-right:0}}
+</style>
+</head>
+<body>
+<main>
+<header>
+  <h1>Pelikan Price Intelligence</h1>
+  <p class="sub">Απλή ανάλυση προϊόντος και αγοράς — χωρίς καταχώριση μοντέλου ή κωδικού με το χέρι.</p>
+</header>
+
+<section class="step" id="step1">
+  <span class="pill">ΒΗΜΑ 1 · ΜΟΝΟ ΕΝΑ ΣΤΟΙΧΕΙΟ</span>
+  <h2>Τι προϊόν θέλεις να αναλύσεις;</h2>
+  <p class="hint">Επικόλλησε το link της σελίδας προϊόντος ή τον κωδικό / EAN.</p>
+  <label for="source">Link ή κωδικός προϊόντος</label>
+  <input id="source" type="text" placeholder="π.χ. https://... ή 948281" autocomplete="off">
+  <div class="row">
+    <button id="identifyBtn">Αναγνώριση προϊόντος</button>
+    <button class="secondary" id="resetBtn">Νέα ανάλυση</button>
+  </div>
+  <p class="status" id="s1status"></p>
+  <div class="note">Η εφαρμογή δεν συμπληρώνει μόνη της στοιχεία από το διαδίκτυο. Για να παραμείνει δωρεάν και χωρίς server, ετοιμάζει το αίτημα και το περνά στο ChatGPT. Εσύ απλώς επικολλάς την απάντηση — δεν πληκτρολογείς μοντέλο, σειρά ή κωδικό.</div>
+</section>
+
+<section class="step hidden" id="step2">
+  <span class="pill">ΒΗΜΑ 2 · ΕΠΙΒΕΒΑΙΩΣΗ</span>
+  <h2>Έλεγχος ταυτότητας προϊόντος</h2>
+  <p class="hint">Επικόλλησε εδώ την απάντηση αναγνώρισης από το ChatGPT. Θα εμφανιστούν όσα στοιχεία εντόπισε.</p>
+  <label for="identity">Απάντηση αναγνώρισης</label>
+  <textarea id="identity" placeholder="Επικόλλησε εδώ την απάντηση του ChatGPT..."></textarea>
+  <label class="check"><input type="checkbox" id="confirmed"> <span>Επιβεβαιώνω ότι η περιγραφή και η φωτογραφία/ταυτοποίηση αφορούν το σωστό προϊόν.</span></label>
+  <div class="row">
+    <button id="researchBtn" disabled>Συνέχεια στην έρευνα αγοράς</button>
+    <button class="secondary" id="copyIdentifyAgain">Αντιγραφή αιτήματος ξανά</button>
+  </div>
+  <p class="status" id="s2status"></p>
+</section>
+
+<section class="step hidden" id="step3">
+  <span class="pill">ΒΗΜΑ 3 · ΔΙΕΘΝΗΣ ΑΓΟΡΑ</span>
+  <h2>Αποτελέσματα έρευνας αγοράς</h2>
+  <p class="hint">Επικόλλησε την απάντηση της έρευνας. Ζητάμε ενεργές αγγελίες χωριστά από επιβεβαιωμένες πωλήσεις.</p>
+  <label for="market">Απάντηση έρευνας αγοράς</label>
+  <textarea id="market" placeholder="Επικόλλησε εδώ τα αποτελέσματα..."></textarea>
+  <div class="row">
+    <button id="costBtn">Συνέχεια στην τιμή αγοράς</button>
+    <button class="secondary" id="copyResearchAgain">Αντιγραφή αιτήματος ξανά</button>
+  </div>
+  <p class="status" id="s3status"></p>
+</section>
+
+<section class="step hidden" id="step4">
+  <span class="pill">ΒΗΜΑ 4 · ΤΙΜΗ ΧΟΝΔΡΙΚΗΣ</span>
+  <h2>Ποιο είναι το κόστος αγοράς σου;</h2>
+  <p class="hint">Συμπλήρωσε μόνο την τιμή που πληρώνεις στον προμηθευτή.</p>
+  <div class="pricegrid">
+    <div><label for="cost">Τιμή χονδρικής (€)</label><input id="cost" type="number" min="0" step="0.01" placeholder="100.00"></div>
+    <div><label for="vat">ΦΠΑ (%)</label><input id="vat" type="number" min="0" step="0.1" value="24"></div>
+  </div>
+  <label class="check"><input type="checkbox" id="vatIncluded"> <span>Η τιμή χονδρικής που έβαλα περιλαμβάνει ΦΠΑ.</span></label>
+  <div class="row">
+    <button id="priceBtn">Δημιουργία πρότασης λιανικής</button>
+  </div>
+  <p class="status" id="s4status"></p>
+</section>
+
+<section class="step hidden" id="step5">
+  <span class="pill">ΒΗΜΑ 5 · ΠΡΟΤΑΣΗ ΛΙΑΝΙΚΗΣ</span>
+  <h2>Τελική πρόταση τιμής</h2>
+  <p class="hint">Επικόλλησε το αίτημα στο ChatGPT και πάρε μία προτεινόμενη τιμή λιανικής με ΦΠΑ.</p>
+  <div class="note" id="calc"></div>
+  <button id="copyPrice">Αντιγραφή αιτήματος τιμολόγησης</button>
+  <p class="status" id="s5status"></p>
+</section>
+<footer>Δεν αποθηκεύονται αναλύσεις ή ιστορικό. Η επιλογή «Νέα ανάλυση» καθαρίζει όλα τα πεδία.</footer>
+</main>
+<script>
+const $ = id => document.getElementById(id);
+let identifyPrompt = "", researchPrompt = "", pricePrompt = "";
+function openChat(){ window.open("https://chatgpt.com/", "_blank", "noopener"); }
+async function copyAndOpen(text, statusId){
+  try { await navigator.clipboard.writeText(text); $(statusId).textContent="Το αίτημα αντιγράφηκε. Άνοιξε το ChatGPT και κάνε επικόλληση (Ctrl+V ή Παρατεταμένο πάτημα → Επικόλληση)."; }
+  catch(e){ $(statusId).textContent="Δεν ήταν δυνατή η αυτόματη αντιγραφή. Επίλεξε και αντέγραψε το αίτημα όταν εμφανιστεί."; }
+  openChat();
+}
+function show(id){$(id).classList.remove("hidden")}
+function hide(id){$(id).classList.add("hidden")}
+function buildIdentify(){
+ const source=$("source").value.trim();
+ if(!source){$("s1status").textContent="Συμπλήρωσε ένα link ή έναν κωδικό.";return}
+ identifyPrompt=`Εντόπισε το ακριβές προϊόν Pelikan που αντιστοιχεί στο παρακάτω link ή στον κωδικό. Πεδίο έρευνας: αποκλειστικά όργανα γραφής Pelikan (πένα, στυλό διαρκείας, rollerball), όλων των γενεών, τρεχόντων ή καταργημένων.\n\nΕΙΣΟΔΟΣ:\n${source}\n\nΟΔΗΓΙΕΣ:\n1. Διάβασε απευθείας τη σελίδα αν είναι URL και αναζήτησε σε αξιόπιστες πηγές/καταλόγους αν χρειάζεται.\n2. Εξήγαγε αυτόματα ονομασία, σειρά, παραλλαγή/χρώμα, τύπο γραφής, κωδικό προϊόντος/SKU/EAN και βασικά χαρακτηριστικά, μόνο όπου τεκμηριώνονται.\n3. Βρες φωτογραφία του ακριβούς προϊόντος. Μην παρουσιάσεις παρόμοια φωτογραφία ως ακριβή· αν δεν βρεθεί, δήλωσέ το καθαρά.\n4. Έλεγξε αν είναι σε παραγωγή ή καταργημένο. Μην συμπεράνεις κατάργηση μόνο από ένα κατάστημα χωρίς απόθεμα.\n5. Αν δεν είσαι βέβαιος, δώσε έως 3 υποψήφια προϊόντα με τις διαφορές τους και ζήτησε διευκρίνιση. Μην προχωρήσεις σε έρευνα τιμών.\n\nΑΠΑΝΤΗΣΗ: παρουσίασε πρώτα καθαρά την ταυτότητα του προϊόντος, τα στοιχεία που επιβεβαιώθηκαν και την πηγή τους, καθώς και σύνδεσμο/εικόνα όταν υπάρχει. Κλείσε ζητώντας μου να επιβεβαιώσω αν είναι το σωστό προϊόν. Μην κάνεις ακόμη έρευνα αγοράς.`;
+ show("step2"); $("identity").value=""; $("confirmed").checked=false; $("researchBtn").disabled=true;
+ $("s1status").textContent="Το αίτημα ετοιμάστηκε.";
+ copyAndOpen(identifyPrompt,"s1status");
+}
+$("identifyBtn").onclick=buildIdentify;
+$("confirmed").onchange=()=>{$("researchBtn").disabled=!$("confirmed").checked || !$("identity").value.trim()};
+$("identity").oninput=()=>{$("researchBtn").disabled=!$("confirmed").checked || !$("identity").value.trim()};
+$("copyIdentifyAgain").onclick=()=>copyAndOpen(identifyPrompt,"s2status");
+$("researchBtn").onclick=()=>{
+ if(!$("confirmed").checked || !$("identity").value.trim())return;
+ researchPrompt=`Κάνε διεθνή έρευνα αγοράς ΜΟΝΟ για το παρακάτω επιβεβαιωμένο προϊόν Pelikan. Μην αλλάξεις ταυτότητα και μην αναμείξεις διαφορετικές παραλλαγές.\n\nΑΡΧΙΚΗ ΕΙΣΟΔΟΣ:\n${$("source").value}\n\nΕΠΙΒΕΒΑΙΩΜΕΝΗ ΤΑΥΤΟΤΗΤΑ:\n${$("identity").value}\n\nΈλεγξε Ελλάδα, Κύπρο, Ευρώπη, Ηνωμένο Βασίλειο, ΗΠΑ, Καναδά και Ασία/λοιπές αγορές. Αναζήτησε σε εξειδικευμένα καταστήματα γραφικής ύλης/πενών, e-shops, eBay και Amazon όπου είναι προσβάσιμα.\n\nΓια κάθε σχετική καταχώριση δώσε ΜΟΝΟ: τιμή και νόμισμα, σύνδεσμο, διαθεσιμότητα (διαθέσιμο/μη διαθέσιμο/άγνωστο), κατάσταση (καινούργιο/μεταχειρισμένο) και χώρα/κατάστημα. Μην προσθέσεις μεταφορικά, δασμούς, φόρους ή έξοδα εισαγωγής.\n\nΧώρισε αυστηρά: Α) ενεργές ζητούμενες τιμές αγγελιών/καταστημάτων, Β) επιβεβαιωμένες ολοκληρωμένες πωλήσεις. Μην παρουσιάσεις ζητούμενη τιμή ως τιμή πώλησης. Αν δεν υπάρχουν επαληθεύσιμες ολοκληρωμένες πωλήσεις, πες το.\n\nΈλεγξε επίσης αν το προϊόν είναι καταργημένο, με κατάσταση επιβεβαιωμένο/πιθανό/μη επιβεβαιωμένο και πηγές. Μην θεωρήσεις ότι είναι καταργημένο μόνο επειδή ένα κατάστημα γράφει εξαντλημένο. Απόφυγε διπλότυπα και άσχετες εκδόσεις. Βάλε ημερομηνία έρευνας και πηγές. Μην επινοήσεις τιμές ή διαθεσιμότητα.`;
+ show("step3"); hide("step4"); $("market").value="";
+ copyAndOpen(researchPrompt,"s2status");
+};
+$("costBtn").onclick=()=>{if(!$("market").value.trim()){$("s3status").textContent="Επικόλλησε πρώτα τα αποτελέσματα της έρευνας.";return}show("step4");$("cost").focus()};
+$("copyResearchAgain").onclick=()=>copyAndOpen(researchPrompt,"s3status");
+$("priceBtn").onclick=()=>{
+ const cost=Number($("cost").value),vat=Number($("vat").value);
+ if(!Number.isFinite(cost)||cost<0||$("cost").value===""){ $("s4status").textContent="Βάλε έγκυρη τιμή χονδρικής.";return}
+ if(!Number.isFinite(vat)||vat<0){$("s4status").textContent="Βάλε έγκυρο ποσοστό ΦΠΑ.";return}
+ const included=$("vatIncluded").checked;
+ const net=included?cost/(1+vat/100):cost;
+ const gross=net*(1+vat/100);
+ pricePrompt=`Πρότεινε ΜΙΑ τελική τιμή λιανικής για το παρακάτω επιβεβαιωμένο προϊόν Pelikan, με ΦΠΑ ${vat}%.\n\nΤΑΥΤΟΤΗΤΑ:\n${$("identity").value}\n\nΕΡΕΥΝΑ ΑΓΟΡΑΣ:\n${$("market").value}\n\nΚΟΣΤΟΣ ΧΟΝΔΡΙΚΗΣ: €${cost.toFixed(2)} (${included?"περιλαμβάνει":"δεν περιλαμβάνει"} ΦΠΑ).\nΥπολογισμένο καθαρό κόστος: €${net.toFixed(2)}. Κόστος με ΦΠΑ: €${gross.toFixed(2)}.\n\nΣτόχος είναι η καλύτερη δυνατή κερδοφορία, αλλά μην ισχυριστείς ότι γνωρίζεις τη βέλτιστη τιμή χωρίς στοιχεία ζήτησης/πραγματικών πωλήσεων. Στάθμισε τις ενεργές ζητούμενες τιμές, τις επιβεβαιωμένες πωλήσεις (αν υπάρχουν), τη σπανιότητα/κατάσταση παραγωγής και το αν οι συγκρίσεις είναι καινούργιες ή μεταχειρισμένες. Μην εξισώνεις ζητούμενες τιμές με πραγματοποιημένες πωλήσεις.\n\nΔώσε μία προτεινόμενη τιμή λιανικής με ΦΠΑ, σύντομη αιτιολόγηση και υπολογισμό καθαρής αξίας πώλησης, μικτού κέρδους και μικτού περιθωρίου επί της καθαρής πώλησης. Δήλωσε ότι το μικτό κέρδος δεν αφαιρεί άλλα λειτουργικά έξοδα. Αν τα δεδομένα αγοράς είναι ανεπαρκή, δήλωσε την αβεβαιότητα και μην παρουσιάσεις ψευδή ακρίβεια.`;
+ const calc=`Υπολογισμός κόστους: καθαρή χονδρική €${net.toFixed(2)} · κόστος με ΦΠΑ €${gross.toFixed(2)} · ΦΠΑ ${vat}% · ${included?"η χονδρική περιλαμβάνει ΦΠΑ":"η χονδρική είναι χωρίς ΦΠΑ"}.`;
+ $("calc").textContent=calc; show("step5"); copyAndOpen(pricePrompt,"s4status");
+};
+$("copyPrice").onclick=()=>copyAndOpen(pricePrompt,"s5status");
+$("resetBtn").onclick=()=>{
+ ["source","identity","market","cost"].forEach(id=>$(id).value="");
+ $("vat").value="24";$("vatIncluded").checked=false;$("confirmed").checked=false;
+ ["step2","step3","step4","step5"].forEach(hide);
+ ["s1status","s2status","s3status","s4status","s5status"].forEach(id=>$(id).textContent="");
+ identifyPrompt=researchPrompt=pricePrompt="";$("researchBtn").disabled=true;
+ window.scrollTo({top:0,behavior:"smooth"});
+};
+</script>
+</body>
+</html>
